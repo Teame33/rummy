@@ -290,37 +290,171 @@
         }
 
         .title-emoji {
-            font-size: 1.5em;
-            margin: 0 10px;
+            font-size: 1.8em;
+            margin: 0 15px;
             vertical-align: middle;
-        }
-
-        .rotating-emoji {
             display: inline-block;
-            animation: rotate 3s infinite linear;
         }
 
-        .bouncing-emoji {
-            display: inline-block;
-            animation: bounce 1s infinite;
+        .card-rotate-left {
+            animation: rotateLeft 3s infinite linear;
+            transform-origin: center;
         }
 
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .card-rotate-right {
+            animation: rotateRight 3s infinite linear;
+            transform-origin: center;
         }
 
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        @keyframes rotateLeft {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(-180deg) scale(1.2); }
+            100% { transform: rotate(-360deg) scale(1); }
         }
 
-        .instructions h3 .emoji {
-            margin-right: 8px;
+        @keyframes rotateRight {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); }
         }
 
-        .instructions li .emoji {
-            margin-right: 5px;
+        .title-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .title-container h1 {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .player-select {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .player-select button {
+            margin: 10px;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            background: #4CAF50;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .player-select button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .player-select .emoji {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+
+        .hidden-area {
+            display: none;
+        }
+
+        .opponent-area {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .opponent-message {
+            color: #4CAF50;
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        .game-code {
+            background: rgba(76, 175, 80, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 300px;
+            text-align: center;
+            border: 2px solid #4CAF50;
+        }
+
+        .game-code h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+        }
+
+        .game-code .code {
+            font-size: 2em;
+            letter-spacing: 5px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        .game-code .copy-button {
+            margin-top: 10px;
+            padding: 5px 15px;
+            background: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .join-game {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .join-game input {
+            padding: 10px;
+            font-size: 1.2em;
+            text-align: center;
+            letter-spacing: 5px;
+            width: 150px;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            text-transform: uppercase;
+        }
+
+        .join-game button {
+            margin-left: 10px;
+            padding: 10px 20px;
+        }
+
+        .game-options {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .game-options button {
+            width: 200px;
+            padding: 15px;
+            font-size: 1.2em;
+            background: #4CAF50;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .game-options button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
@@ -332,11 +466,13 @@
         </div>
         
         <div class="center-area">
-            <h1>
-                <span class="title-emoji rotating-emoji">🎲</span>
-                ሮሚኖ
-                <span class="title-emoji rotating-emoji">🎲</span>
-            </h1>
+            <div class="title-container">
+                <h1>
+                    <span class="title-emoji card-rotate-left">🃏</span>
+                    ሮሚኖ
+                    <span class="title-emoji card-rotate-right">🎴</span>
+                </h1>
+            </div>
             
             <div class="message" id="message">
                 <span class="emoji bouncing-emoji">🎮</span> ሓድሽ ጸወታ ጠውቕ! <span class="emoji">🎲</span>
@@ -356,7 +492,7 @@
                 </ul>
             </div>
             
-            <button onclick="showNameModal()" id="newGameBtn" class="glow">
+            <button onclick="showPlayerSelect()" id="newGameBtn" class="glow">
                 <span class="emoji">🎲</span>ሓድሽ ጸወታ<span class="emoji">🎮</span>
             </button>
             
@@ -377,6 +513,20 @@
         <div class="player1-area">
             <div class="player-name" id="player1Name">👤 ተጻዋታይ 1 (ታሕተዋይ)</div>
             <div class="hand" id="player1Hand"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="playerSelectModal">
+        <div class="modal-content">
+            <h2><span class="emoji">🎮</span> መን ኢኻ?</h2>
+            <div class="player-select">
+                <button onclick="selectPlayer('player1')">
+                    <span class="emoji">👤</span>ተጻዋታይ 1 (ታሕተዋይ)
+                </button>
+                <button onclick="selectPlayer('player2')">
+                    <span class="emoji">👤</span>ተጻዋታይ 2 (ላዕለዋይ)
+                </button>
+            </div>
         </div>
     </div>
 
@@ -402,6 +552,41 @@
         </div>
     </div>
 
+    <div class="modal" id="gameOptionsModal">
+        <div class="modal-content">
+            <h2><span class="emoji">🎮</span> ጸወታ ምረጽ</h2>
+            <div class="game-options">
+                <button onclick="createNewGame()">
+                    <span class="emoji">🎲</span> ሓድሽ ጸወታ ጀምር
+                </button>
+                <div class="join-game">
+                    <input type="text" id="gameCode" placeholder="XXXX" maxlength="4">
+                    <button onclick="joinGame()">
+                        <span class="emoji">🎯</span> ናብ ጸወታ ኣእቱ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="gameCodeModal">
+        <div class="modal-content">
+            <h2><span class="emoji">🎲</span> ጸወታ ተፈጢሩ</h2>
+            <div class="game-code">
+                <h3>ነዚ ኮድ ንመሓዛኻ ስደደሉ:</h3>
+                <div class="code" id="generatedCode"></div>
+                <button class="copy-button" onclick="copyGameCode()">
+                    <span class="emoji">📋</span> ኮፒ ግበር
+                </button>
+            </div>
+            <div class="player-select">
+                <button onclick="selectPlayer('player1')">
+                    <span class="emoji">👤</span>ጀማሪ
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let gameState = null;
         let selectedCard = null;
@@ -410,37 +595,73 @@
         let player2HandOrder = [];
         let player1Name = "ተጻዋታይ 1";
         let player2Name = "ተጻዋታይ 2";
-        
+        let currentPlayer = null;
+        let gameCode = null;
+
+        function showPlayerSelect() {
+            document.getElementById('playerSelectModal').style.display = 'flex';
+        }
+
+        function selectPlayer(player) {
+            currentPlayer = player;
+            localStorage.setItem('selectedPlayer', player);
+            document.getElementById('playerSelectModal').style.display = 'none';
+            
+            // Show only relevant player area
+            const player1Area = document.querySelector('.player1-area');
+            const player2Area = document.querySelector('.player2-area');
+            
+            if (player === 'player1') {
+                player2Area.classList.add('opponent-area');
+                player2Area.innerHTML = '<div class="opponent-message">ተጻዋታይ 2 ካርድታት</div>';
+            } else {
+                player1Area.classList.add('opponent-area');
+                player1Area.innerHTML = '<div class="opponent-message">ተጻዋታይ 1 ካርድታት</div>';
+            }
+            
+            showNameModal();
+        }
+
         function showNameModal() {
             const modal = document.getElementById('nameModal');
             modal.style.display = 'flex';
-            document.getElementById('player1NameInput').focus();
             
-            const modalTitle = modal.querySelector('h2');
-            modalTitle.innerHTML = `
-                <span class="emoji">🎲</span> 
-                ስምካ ኣእቱ 
-                <span class="emoji">🎮</span>
-            `;
+            // Only show relevant name input
+            const p1Input = document.getElementById('player1NameInput');
+            const p2Input = document.getElementById('player2NameInput');
+            const p1Group = p1Input.parentElement;
+            const p2Group = p2Input.parentElement;
+            
+            if (currentPlayer === 'player1') {
+                p2Group.style.display = 'none';
+                p1Input.focus();
+            } else {
+                p1Group.style.display = 'none';
+                p2Input.focus();
+            }
         }
 
         function startGameWithNames() {
             const p1Input = document.getElementById('player1NameInput').value.trim();
             const p2Input = document.getElementById('player2NameInput').value.trim();
             
-            if (!p1Input || !p2Input) {
-                const errorDiv = document.getElementById('nameError');
-                errorDiv.innerHTML = `
-                    <span class="emoji">⚠️</span> 
-                    በጃኹም ክልቲኹም ስምኩም ኣእትዉ 
-                    <span class="emoji">🎲</span>
-                `;
+            if (currentPlayer === 'player1' && !p1Input) {
+                document.getElementById('nameError').innerHTML = '<span class="emoji">⚠️</span> በጃኻ ስምካ ኣእቱ';
+                return;
+            }
+            if (currentPlayer === 'player2' && !p2Input) {
+                document.getElementById('nameError').innerHTML = '<span class="emoji">⚠️</span> በጃኻ ስምካ ኣእቱ';
                 return;
             }
             
-            localStorage.setItem('playerName', p1Input);
-            player1Name = p1Input;
-            player2Name = p2Input;
+            if (currentPlayer === 'player1') {
+                player1Name = p1Input;
+                player2Name = "ተጻዋታይ 2";
+            } else {
+                player1Name = "ተጻዋታይ 1";
+                player2Name = p2Input;
+            }
+            
             document.getElementById('nameModal').style.display = 'none';
             startNewGame();
         }
@@ -509,7 +730,13 @@
         }
 
         function renderHand(playerId) {
+            if (playerId !== currentPlayer) {
+                return; // Don't render opponent's hand
+            }
+
             const playerHand = document.getElementById(`${playerId}Hand`);
+            if (!playerHand) return; // Skip if element doesn't exist
+            
             playerHand.innerHTML = '';
             
             const orderArray = playerId === 'player1' ? player1HandOrder : player2HandOrder;
@@ -525,35 +752,16 @@
             currentOrder.forEach((originalIndex, currentIndex) => {
                 const card = gameState[`${playerId}_hand`][originalIndex];
                 const cardElement = document.createElement('div');
-
-                const isCurrentPlayerView = (
-                    (playerId === 'player1' && player1Name === document.getElementById('player1NameInput').value.trim()) ||
-                    (playerId === 'player2' && player2Name === document.getElementById('player2NameInput').value.trim())
-                );
-
-                if (isCurrentPlayerView) {
-                    cardElement.className = `card ${card.color}`;
-                    cardElement.textContent = card.display;
-                    cardElement.dataset.index = currentIndex;
-                    cardElement.onclick = () => discardCard(originalIndex, playerId);
-                    cardElement.draggable = true;
-                } else {
-                    cardElement.className = 'card hidden';
-                    cardElement.draggable = false;
-                }
-
+                cardElement.className = `card ${card.color}`;
+                cardElement.textContent = card.display;
+                cardElement.dataset.index = currentIndex;
+                cardElement.onclick = () => discardCard(originalIndex, playerId);
+                cardElement.draggable = true;
                 playerHand.appendChild(cardElement);
             });
             
             if (playerId === gameState.current_turn) {
                 initDragAndDrop(playerId);
-            }
-            
-            const playerName = document.getElementById(`${playerId}Name`);
-            if (gameState.current_turn === playerId) {
-                playerName.classList.add('current-turn');
-            } else {
-                playerName.classList.remove('current-turn');
             }
         }
 
@@ -673,11 +881,64 @@
             }
         }
 
-        window.onload = function() {
-            const savedName = localStorage.getItem('playerName');
-            if (savedName) {
-                document.getElementById('player1NameInput').value = savedName;
+        function showGameOptions() {
+            document.getElementById('gameOptionsModal').style.display = 'flex';
+        }
+
+        async function createNewGame() {
+            const response = await fetch('/create-game', {
+                method: 'POST'
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                gameCode = data.code;
+                document.getElementById('generatedCode').textContent = gameCode;
+                document.getElementById('gameOptionsModal').style.display = 'none';
+                document.getElementById('gameCodeModal').style.display = 'flex';
+                gameState = data.state;
             }
+        }
+
+        async function joinGame() {
+            const code = document.getElementById('gameCode').value.trim().toUpperCase();
+            if (!code || code.length !== 4) {
+                alert('በጃኻ ቅኑዕ ኮድ ኣእቱ');
+                return;
+            }
+
+            const response = await fetch('/join-game', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code })
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                gameCode = code;
+                document.getElementById('gameOptionsModal').style.display = 'none';
+                selectPlayer('player2');
+                gameState = data.state;
+            } else {
+                alert('ዘይቅኑዕ ኮድ እዩ');
+            }
+        }
+
+        function copyGameCode() {
+            navigator.clipboard.writeText(gameCode).then(() => {
+                const button = document.querySelector('.copy-button');
+                button.textContent = '✓ ኮፒ ተገይሩ';
+                setTimeout(() => {
+                    button.innerHTML = '<span class="emoji">📋</span> ኮፒ ግበር';
+                }, 2000);
+            });
+        }
+
+        // When page loads, show game options
+        window.onload = function() {
+            showGameOptions();
         }
     </script>
 </body>

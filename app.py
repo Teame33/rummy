@@ -2,27 +2,59 @@ from flask import Flask, jsonify, request, session
 from game.rummy_game import RummyGame
 from dotenv import load_dotenv
 import os
+import random
+import string
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key')
 
-# Store active games
+# Store active games with their codes
 games = {}
+game_codes = {}
+
+def generate_game_code():
+    """Generate a unique 4-letter game code"""
+    while True:
+        code = ''.join(random.choices(string.ascii_uppercase, k=4))
+        if code not in game_codes:
+            return code
 
 @app.route('/')
 def index():
     return app.send_static_file('index.html')
 
-@app.route('/new-game', methods=['POST'])
-def new_game():
-    """Start a new game"""
+@app.route('/create-game', methods=['POST'])
+def create_game():
+    """Create a new game and return its code"""
     game = RummyGame()
     game_id = id(game)
+    code = generate_game_code()
+    
     games[game_id] = game
+    game_codes[code] = game_id
     session['game_id'] = game_id
-    return jsonify({'status': 'success', 'state': game.get_state()})
+    
+    return jsonify({
+        'status': 'success',
+        'code': code,
+        'state': game.get_state()
+    })
+
+@app.route('/join-game', methods=['POST'])
+def join_game():
+    """Join an existing game using a code"""
+    code = request.json.get('code', '').upper()
+    if code not in game_codes:
+        return jsonify({'error': 'Invalid game code'}), 404
+    
+    game_id = game_codes[code]
+    session['game_id'] = game_id
+    return jsonify({
+        'status': 'success',
+        'state': games[game_id].get_state()
+    })
 
 @app.route('/game-state')
 def game_state():
@@ -68,6 +100,11 @@ def discard_card():
     if success:
         return jsonify({'status': 'success', 'state': game.get_state()})
     return jsonify({'error': 'Invalid move'}), 400
+
+# Clean up old games periodically (you might want to add this in production)
+def cleanup_old_games():
+    # Remove games older than X hours
+    pass
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
