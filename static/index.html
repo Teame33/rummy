@@ -93,10 +93,13 @@
             align-items: center;
             cursor: pointer;
             margin: 0 10px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
         }
         
         .deck:hover, .discard-pile:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
         }
         
         button {
@@ -130,19 +133,60 @@
             text-align: center;
             margin: 10px 0;
             font-size: 1.2em;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
         }
 
         .current-turn {
-            background: rgba(76, 175, 80, 0.3);
+            background: rgba(76, 175, 80, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { background: rgba(76, 175, 80, 0.3); }
+            50% { background: rgba(76, 175, 80, 0.5); }
+            100% { background: rgba(76, 175, 80, 0.3); }
+        }
+
+        .player1-area {
+            background: rgba(100, 149, 237, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .player2-area {
+            background: rgba(255, 99, 71, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
             border-radius: 10px;
-            padding: 10px;
+            margin: 20px 0;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .instructions h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+
+        .instructions ul {
+            margin: 10px 0;
+            padding-left: 20px;
         }
     </style>
 </head>
 <body>
     <div class="game-container">
         <div class="player2-area">
-            <div class="player-name" id="player2Name">ተጻዋታይ 2</div>
+            <div class="player-name" id="player2Name">ተጻዋታይ 2 (ላዕለዋይ)</div>
             <div class="hand player2-hand" id="player2Hand"></div>
         </div>
         
@@ -152,12 +196,28 @@
             <div class="message" id="message">
                 ሓድሽ ጸወታ ጠውቕ!
             </div>
+
+            <div class="instructions">
+                <h3>ከመይ ጌርካ ትጻወት:</h3>
+                <ul>
+                    <li>ተጻዋታይ 1 ታሕተዋይ ካርድ እዩ</li>
+                    <li>ተጻዋታይ 2 ላዕለዋይ ካርድ እዩ</li>
+                    <li>እብረኻ እንተኾይኑ:</li>
+                    <ul>
+                        <li>1. ካብ Deck ወይ Discard ካርድ ውሰድ</li>
+                        <li>2. ካርድታትካ ከተዳልዎም ትኽእል ኢኻ</li>
+                        <li>3. ሓደ ካርድ ናብ Discard ደርብዮ</li>
+                    </ul>
+                </ul>
+            </div>
             
-            <button onclick="startNewGame()" id="newGameBtn">ሓድሽ ጸወታ</button>
+            <button onclick="startNewGame()" id="newGameBtn" class="glow">ሓድሽ ጸወታ</button>
             
             <div class="game-info">
-                <div class="deck" onclick="drawCard('deck')">
-                    Deck (<span id="deckCount">0</span>)
+                <div class="deck" onclick="drawCard('deck')" id="deckArea">
+                    <div>
+                        Deck<br>(<span id="deckCount">0</span>)
+                    </div>
                 </div>
                 <div class="discard-pile" onclick="drawCard('discard')" id="discardPile">
                     Discard
@@ -166,7 +226,7 @@
         </div>
 
         <div class="player1-area">
-            <div class="player-name" id="player1Name">ተጻዋታይ 1</div>
+            <div class="player-name" id="player1Name">ተጻዋታይ 1 (ታሕተዋይ)</div>
             <div class="hand" id="player1Hand"></div>
         </div>
     </div>
@@ -351,14 +411,35 @@
             renderHand('player1');
             renderHand('player2');
             
-            // Update message
+            // Update message and highlight current player
             const message = document.getElementById('message');
+            const player1Area = document.querySelector('.player1-area');
+            const player2Area = document.querySelector('.player2-area');
+            
             if (gameState.game_over) {
-                const winner = gameState.winner === 'player1' ? 'ተጻዋታይ 1' : 'ተጻዋታይ 2';
+                const winner = gameState.winner === 'player1' ? 'ተጻዋታይ 1 (ታሕተዋይ)' : 'ተጻዋታይ 2 (ላዕለዋይ)';
                 message.textContent = `ጸወታ ተወዲኡ! ${winner} ሰዒሩ!`;
+                player1Area.style.opacity = '0.7';
+                player2Area.style.opacity = '0.7';
             } else {
-                const currentPlayer = gameState.current_turn === 'player1' ? 'ተጻዋታይ 1' : 'ተጻዋታይ 2';
+                const currentPlayer = gameState.current_turn === 'player1' ? 'ተጻዋታይ 1 (ታሕተዋይ)' : 'ተጻዋታይ 2 (ላዕለዋይ)';
                 message.textContent = `${currentPlayer} እብሩ!`;
+                
+                // Highlight active player's area
+                player1Area.style.opacity = gameState.current_turn === 'player1' ? '1' : '0.7';
+                player2Area.style.opacity = gameState.current_turn === 'player2' ? '1' : '0.7';
+            }
+            
+            // Update deck and discard pile interactivity
+            const deckArea = document.getElementById('deckArea');
+            const discardArea = document.getElementById('discardPile');
+            
+            if (gameState.game_over) {
+                deckArea.style.cursor = 'not-allowed';
+                discardArea.style.cursor = 'not-allowed';
+            } else {
+                deckArea.style.cursor = 'pointer';
+                discardArea.style.cursor = 'pointer';
             }
         }
     </script>
