@@ -1,0 +1,3 @@
+"""
+Eritrean Rummy game module
+"""

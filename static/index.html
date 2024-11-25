@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ሮሚኖ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a472a;
+            color: white;
+        }
+        
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        
+        .hand {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            min-height: 120px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .hand.player2-hand {
+            transform: rotate(180deg);
+        }
+
+        .hand.player2-hand .card {
+            transform: rotate(180deg);
+        }
+        
+        .card {
+            width: 70px;
+            height: 100px;
+            background: white;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: grab;
+            user-select: none;
+            position: relative;
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .card.red {
+            color: red;
+        }
+        
+        .card.black {
+            color: black;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            gap: 20px;
+        }
+        
+        .deck, .discard-pile {
+            width: 70px;
+            height: 100px;
+            border: 2px solid white;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+        
+        .deck:hover, .discard-pile:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .player-name {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 1.2em;
+        }
+
+        .current-turn {
+            background: rgba(76, 175, 80, 0.3);
+            border-radius: 10px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="player2-area">
+            <div class="player-name" id="player2Name">ተጻዋታይ 2</div>
+            <div class="hand player2-hand" id="player2Hand"></div>
+        </div>
+        
+        <div class="center-area">
+            <h1>ሮሚኖ</h1>
+            
+            <div class="message" id="message">
+                ሓድሽ ጸወታ ጠውቕ!
+            </div>
+            
+            <button onclick="startNewGame()" id="newGameBtn">ሓድሽ ጸወታ</button>
+            
+            <div class="game-info">
+                <div class="deck" onclick="drawCard('deck')">
+                    Deck (<span id="deckCount">0</span>)
+                </div>
+                <div class="discard-pile" onclick="drawCard('discard')" id="discardPile">
+                    Discard
+                </div>
+            </div>
+        </div>
+
+        <div class="player1-area">
+            <div class="player-name" id="player1Name">ተጻዋታይ 1</div>
+            <div class="hand" id="player1Hand"></div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = null;
+        let selectedCard = null;
+        let draggedCard = null;
+        let player1HandOrder = [];
+        let player2HandOrder = [];
+        
+        async function startNewGame() {
+            const response = await fetch('/new-game', {
+                method: 'POST'
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                player1HandOrder = [];
+                player2HandOrder = [];
+                updateGameState();
+            }
+        }
+
+        function initDragAndDrop(playerId) {
+            const playerHand = document.getElementById(`${playerId}Hand`);
+            const cards = playerHand.querySelectorAll('.card');
+            
+            cards.forEach((card, index) => {
+                card.draggable = true;
+                card.dataset.index = index;
+                
+                card.addEventListener('dragstart', (e) => {
+                    if (gameState.current_turn !== playerId) return;
+                    draggedCard = e.target;
+                    e.target.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', e.target.dataset.index);
+                });
+                
+                card.addEventListener('dragend', (e) => {
+                    e.target.classList.remove('dragging');
+                });
+                
+                card.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                });
+                
+                card.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (gameState.current_turn !== playerId) return;
+                    if (draggedCard === e.target) return;
+                    
+                    const fromIndex = parseInt(draggedCard.dataset.index);
+                    const toIndex = parseInt(e.target.dataset.index);
+                    
+                    const orderArray = playerId === 'player1' ? player1HandOrder : player2HandOrder;
+                    const newOrder = [...Array(gameState[`${playerId}_hand`].length).keys()];
+                    newOrder.splice(fromIndex, 1);
+                    newOrder.splice(toIndex, 0, fromIndex);
+                    
+                    if (playerId === 'player1') {
+                        player1HandOrder = newOrder;
+                    } else {
+                        player2HandOrder = newOrder;
+                    }
+                    
+                    renderHand(playerId);
+                });
+            });
+            
+            playerHand.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+        }
+
+        function renderHand(playerId) {
+            const playerHand = document.getElementById(`${playerId}Hand`);
+            playerHand.innerHTML = '';
+            
+            const orderArray = playerId === 'player1' ? player1HandOrder : player2HandOrder;
+            if (orderArray.length !== gameState[`${playerId}_hand`].length) {
+                if (playerId === 'player1') {
+                    player1HandOrder = [...Array(gameState.player1_hand.length).keys()];
+                } else {
+                    player2HandOrder = [...Array(gameState.player2_hand.length).keys()];
+                }
+            }
+            
+            const currentOrder = playerId === 'player1' ? player1HandOrder : player2HandOrder;
+            currentOrder.forEach((originalIndex, currentIndex) => {
+                const card = gameState[`${playerId}_hand`][originalIndex];
+                const cardElement = document.createElement('div');
+                cardElement.className = `card ${card.color}`;
+                cardElement.textContent = card.display;
+                cardElement.dataset.index = currentIndex;
+                cardElement.onclick = () => discardCard(originalIndex, playerId);
+                playerHand.appendChild(cardElement);
+            });
+            
+            initDragAndDrop(playerId);
+            
+            // Update player name styling based on turn
+            const playerName = document.getElementById(`${playerId}Name`);
+            if (gameState.current_turn === playerId) {
+                playerName.classList.add('current-turn');
+            } else {
+                playerName.classList.remove('current-turn');
+            }
+        }
+
+        async function drawCard(source) {
+            if (!gameState || gameState.game_over) return;
+            
+            const response = await fetch('/draw-card', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    source,
+                    player: gameState.current_turn
+                })
+            });
+            
+            const data = await response.json();
+            if (data.status === 'success') {
+                gameState = data.state;
+                renderGame();
+            }
+        }
+        
+        async function discardCard(index, player) {
+            if (!gameState || gameState.current_turn !== player || gameState.game_over) return;
+            
+            try {
+                const response = await fetch('/discard-card', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        card_index: index,
+                        player: player
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    gameState = data.state;
+                    if (player === 'player1') {
+                        player1HandOrder = [];
+                    } else {
+                        player2HandOrder = [];
+                    }
+                    renderGame();
+                }
+            } catch (error) {
+                console.error('Error during discard:', error);
+            }
+        }
+        
+        async function updateGameState() {
+            const response = await fetch('/game-state');
+            gameState = await response.json();
+            renderGame();
+        }
+        
+        function renderGame() {
+            if (!gameState) return;
+            
+            // Update deck count
+            document.getElementById('deckCount').textContent = gameState.deck_remaining;
+            
+            // Update discard pile
+            const discardPile = document.getElementById('discardPile');
+            if (gameState.discard_pile_top) {
+                discardPile.innerHTML = `<div class="card ${gameState.discard_pile_top.color}">${gameState.discard_pile_top.display}</div>`;
+            } else {
+                discardPile.innerHTML = 'Discard';
+            }
+            
+            // Render both players' hands
+            renderHand('player1');
+            renderHand('player2');
+            
+            // Update message
+            const message = document.getElementById('message');
+            if (gameState.game_over) {
+                const winner = gameState.winner === 'player1' ? 'ተጻዋታይ 1' : 'ተጻዋታይ 2';
+                message.textContent = `ጸወታ ተወዲኡ! ${winner} ሰዒሩ!`;
+            } else {
+                const currentPlayer = gameState.current_turn === 'player1' ? 'ተጻዋታይ 1' : 'ተጻዋታይ 2';
+                message.textContent = `${currentPlayer} እብሩ!`;
+            }
+        }
+    </script>
+</body>
+</html>
