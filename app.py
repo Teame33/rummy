@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 import os
 import random
 import string
+import time
+import threading
 
 load_dotenv()
 
@@ -62,55 +64,113 @@ def join_game():
         'state': games[game_id].get_state()
     })
 
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({'error': 'Resource not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'error': 'Internal server error'}), 500
+
 @app.route('/game-state')
 def game_state():
     """Get current game state"""
-    game_id = session.get('game_id')
-    if game_id not in games:
-        return jsonify({'error': 'No active game'}), 404
-    return jsonify(games[game_id].get_state())
+    try:
+        game_id = session.get('game_id')
+        if not game_id:
+            return jsonify({'error': 'No active game session'}), 404
+        if game_id not in games:
+            return jsonify({'error': 'Game not found'}), 404
+        return jsonify(games[game_id].get_state())
+    except Exception as e:
+        print(f"Error in game_state: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/draw-card', methods=['POST'])
 def draw_card():
     """Draw a card from deck or discard pile"""
-    game_id = session.get('game_id')
-    if game_id not in games:
-        return jsonify({'error': 'No active game'}), 404
-    
-    source = request.json.get('source', 'deck')
-    player = request.json.get('player', 'player1')
-    
-    game = games[game_id]
-    success = game.player_draw(source, player)
-    
-    if success:
-        return jsonify({'status': 'success', 'state': game.get_state()})
-    return jsonify({'error': 'Invalid move'}), 400
+    try:
+        game_id = session.get('game_id')
+        if not game_id:
+            return jsonify({'error': 'No active game session'}), 404
+        if game_id not in games:
+            return jsonify({'error': 'Game not found'}), 404
+        
+        source = request.json.get('source', 'deck')
+        player = request.json.get('player', 'player1')
+        
+        if source not in ['deck', 'discard']:
+            return jsonify({'error': 'Invalid source'}), 400
+        
+        game = games[game_id]
+        success = game.player_draw(source, player)
+        
+        if success:
+            return jsonify({'status': 'success', 'state': game.get_state()})
+        return jsonify({'error': 'Invalid move'}), 400
+    except Exception as e:
+        print(f"Error in draw_card: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/discard-card', methods=['POST'])
 def discard_card():
     """Discard a card"""
-    game_id = session.get('game_id')
-    if game_id not in games:
-        return jsonify({'error': 'No active game'}), 404
-    
-    card_index = request.json.get('card_index')
-    player = request.json.get('player', 'player1')
-    
-    if card_index is None:
-        return jsonify({'error': 'No card index provided'}), 400
+    try:
+        game_id = session.get('game_id')
+        if not game_id:
+            return jsonify({'error': 'No active game session'}), 404
+        if game_id not in games:
+            return jsonify({'error': 'Game not found'}), 404
         
-    game = games[game_id]
-    success = game.player_discard(card_index, player)
-    
-    if success:
-        return jsonify({'status': 'success', 'state': game.get_state()})
-    return jsonify({'error': 'Invalid move'}), 400
+        card_index = request.json.get('card_index')
+        player = request.json.get('player', 'player1')
+        
+        if card_index is None:
+            return jsonify({'error': 'No card index provided'}), 400
+            
+        game = games[game_id]
+        success = game.player_discard(card_index, player)
+        
+        if success:
+            return jsonify({'status': 'success', 'state': game.get_state()})
+        return jsonify({'error': 'Invalid move'}), 400
+    except Exception as e:
+        print(f"Error in discard_card: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
-# Clean up old games periodically (you might want to add this in production)
 def cleanup_old_games():
-    # Remove games older than X hours
-    pass
+    """Clean up inactive games older than 30 minutes"""
+    current_time = time.time()
+    inactive_threshold = 30 * 60  # 30 minutes
+    
+    to_remove = []
+    for game_id, game in games.items():
+        if not hasattr(game, 'last_activity'):
+            game.last_activity = current_time
+        elif current_time - game.last_activity > inactive_threshold:
+            to_remove.append(game_id)
+    
+    for game_id in to_remove:
+        # Remove from both dictionaries
+        code = next((code for code, gid in game_codes.items() if gid == game_id), None)
+        if code:
+            del game_codes[code]
+        del games[game_id]
+
+@app.before_request
+def update_game_activity():
+    """Update last activity time for the current game"""
+    game_id = session.get('game_id')
+    if game_id in games:
+        games[game_id].last_activity = time.time()
+
+def start_cleanup_scheduler():
+    while True:
+        time.sleep(300)  # 5 minutes
+        cleanup_old_games()
+
+cleanup_thread = threading.Thread(target=start_cleanup_scheduler, daemon=True)
+cleanup_thread.start()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
