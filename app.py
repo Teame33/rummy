@@ -70,5 +70,6 @@ def discard_card():
     return jsonify({'error': 'Invalid move'}), 400
 
 if __name__ == '__main__':
-    print("Starting Rummy server...")
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    print(f"Starting Rummy server on port {port}...")
+    app.run(host='0.0.0.0', port=port)
