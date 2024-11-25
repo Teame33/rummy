@@ -46,8 +46,14 @@ def create_game():
 def join_game():
     """Join an existing game using a code"""
     code = request.json.get('code', '').upper()
+    print(f"Trying to join game with code: {code}")  # Debug log
+    print(f"Available codes: {list(game_codes.keys())}")  # Debug log
+    
     if code not in game_codes:
-        return jsonify({'error': 'Invalid game code'}), 404
+        return jsonify({
+            'status': 'error',
+            'message': 'Invalid game code'
+        }), 404
     
     game_id = game_codes[code]
     session['game_id'] = game_id

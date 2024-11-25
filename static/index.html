@@ -456,6 +456,42 @@
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
+
+        .card-suits {
+            font-size: 1.8em;
+            animation: colorChange 4s infinite;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            letter-spacing: 5px;
+        }
+
+        .red-suit {
+            color: #ff6b6b;
+        }
+
+        .black-suit {
+            color: #4CAF50;
+        }
+
+        @keyframes colorChange {
+            0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
+            25% { text-shadow: 0 0 10px rgba(0, 255, 0, 0.3); }
+            50% { text-shadow: 0 0 10px rgba(0, 0, 255, 0.3); }
+            75% { text-shadow: 0 0 10px rgba(255, 255, 0, 0.3); }
+            100% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
+        }
+
+        .welcome-message {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.3em;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -475,23 +511,17 @@
             </div>
             
             <div class="message" id="message">
-                <span class="emoji bouncing-emoji">🎮</span> ሓድሽ ጸወታ ጠውቕ! <span class="emoji">🎲</span>
+                <div class="welcome-message">
+                    <span class="card-suits">
+                        <span class="black-suit">♠</span>
+                        <span class="red-suit">♥</span>
+                        ሓድሽ ጸወታ ጠውቕ!
+                        <span class="red-suit">♦</span>
+                        <span class="black-suit">♣</span>
+                    </span>
+                </div>
             </div>
 
-            <div class="instructions">
-                <h3><span class="emoji">🎯</span>ከመይ ጌርካ ትጻወት:</h3>
-                <ul>
-                    <li><span class="emoji">🎲</span>ተጻዋታይ 1 ታሕተዋይ ካርድ እዩ</li>
-                    <li><span class="emoji">🎲</span>ተጻዋታይ 2 ላዕለዋይ ካርድ እዩ</li>
-                    <li><span class="emoji">🎯</span>እብረኻ እንተኾይኑ:</li>
-                    <ul>
-                        <li><span class="emoji">1️⃣</span> ካብ Deck ወይ Discard ካርድ ውሰድ</li>
-                        <li><span class="emoji">2️⃣</span> ካርድታትካ ከተዳልዎም ትኽእል ኢኻ</li>
-                        <li><span class="emoji">3️⃣</span> ሓደ ካርድ ናብ Discard ደርብዮ</li>
-                    </ul>
-                </ul>
-            </div>
-            
             <button onclick="showPlayerSelect()" id="newGameBtn" class="glow">
                 <span class="emoji">🎲</span>ሓድሽ ጸወታ<span class="emoji">🎮</span>
             </button>
@@ -605,7 +635,6 @@
         function selectPlayer(player) {
             currentPlayer = player;
             localStorage.setItem('selectedPlayer', player);
-            document.getElementById('playerSelectModal').style.display = 'none';
             
             // Show only relevant player area
             const player1Area = document.querySelector('.player1-area');
@@ -619,6 +648,12 @@
                 player1Area.innerHTML = '<div class="opponent-message">ተጻዋታይ 1 ካርድታት</div>';
             }
             
+            // Close all modals
+            document.getElementById('playerSelectModal').style.display = 'none';
+            document.getElementById('gameCodeModal').style.display = 'none';
+            document.getElementById('gameOptionsModal').style.display = 'none';
+            
+            // Show name input
             showNameModal();
         }
 
@@ -883,6 +918,8 @@
 
         function showGameOptions() {
             document.getElementById('gameOptionsModal').style.display = 'flex';
+            // Clear any previous game code
+            document.getElementById('gameCode').value = '';
         }
 
         async function createNewGame() {
@@ -897,6 +934,9 @@
                 document.getElementById('gameOptionsModal').style.display = 'none';
                 document.getElementById('gameCodeModal').style.display = 'flex';
                 gameState = data.state;
+                // Auto-select as Player 1 (code creator)
+                currentPlayer = 'player1';
+                selectPlayer('player1');
             }
         }
 
@@ -907,22 +947,33 @@
                 return;
             }
 
-            const response = await fetch('/join-game', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ code })
-            });
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                gameCode = code;
-                document.getElementById('gameOptionsModal').style.display = 'none';
-                selectPlayer('player2');
-                gameState = data.state;
-            } else {
-                alert('ዘይቅኑዕ ኮድ እዩ');
+            try {
+                const response = await fetch('/join-game', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ code })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert(errorData.message || 'ዘይቅኑዕ ኮድ እዩ');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    gameCode = code;
+                    gameState = data.state;
+                    document.getElementById('gameOptionsModal').style.display = 'none';
+                    // Auto-select as Player 2 (code joiner)
+                    currentPlayer = 'player2';
+                    selectPlayer('player2');
+                }
+            } catch (error) {
+                console.error('Error joining game:', error);
+                alert('ጸገም ኣጋጢሙ፡ በጃኻ ደጊምካ ፈትን');
             }
         }
 
